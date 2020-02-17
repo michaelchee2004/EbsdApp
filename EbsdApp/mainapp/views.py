@@ -139,7 +139,7 @@ def run_page(request):
         
         run_instance = OptiModel(i_op, i_t, p_capital, p_opcost, p_capacity, p_demand)
         run_instance.run_model()
-        result = str(run_instance.m.v_F['op15', 2023].value)
+        result = str(run_instance.m.obj.value())
 
     # myyear = Year.objects.get(year_value=2020).id
     # myoption = Option.objects.get(name='op01').id
