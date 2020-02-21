@@ -3,6 +3,7 @@ from .models import *
 import pandas as pd
 from .opti_code import OptiModel
 import pyutilib.subprocess.GlobalData
+from .forms import OptionForm
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
@@ -82,76 +83,65 @@ def run_page(request):
         i_t = []
         for t in Year.objects.all():
             i_t.append(t.year_value)
-        
-    #     i_t = []
-        # for t in Year.objects.all():
-        #     print(type(t.year_value))
 
         p_capital = {}
         p_capital.clear()
         for op in Option.objects.all():
             for t in Year.objects.all():
-                option = Option.objects.get(name=op.name)
-                year = Year.objects.get(year_value=t.year_value)
-                p_capital[(option.name, year.year_value)] = Capital.objects.get(option=option, year=year).capital_value
-
-        # p_capital = {
-        #     ('op1', 2020): 100,
-        #     ('op2', 2020): 200,
-        #     ('op3', 2020): 300
-        # }
+                p_capital[(op.name, t.year_value)] = Capital.objects.get(option=op, year=t).capital_value
 
         p_opcost = {}
         p_opcost.clear()
         for op in Option.objects.all():
             for t in Year.objects.all():
-                option = Option.objects.get(name=op.name)
-                year = Year.objects.get(year_value=t.year_value)
-                p_opcost[(option.name, year.year_value)] = Opex.objects.get(option=option, year=year).opex_value
-
-        # p_opcost = {
-        #     ('op1', 2020): 50,
-        #     ('op2', 2020): 20,
-        #     ('op3', 2020): 10
-        # }
+                p_opcost[(op.name, t.year_value)] = Opex.objects.get(option=op, year=t).opex_value
 
         p_capacity = {}
         p_capacity.clear()
         for op in Option.objects.all():
-            option = Option.objects.get(name=op.name)
-            p_capacity[option.name] = Capacity.objects.get(option=option).capacity_value
-
-        # p_capacity = {
-        #     'op1': 80,
-        #     'op2': 70,
-        #     'op3': 40
-        # }
+            p_capacity[op.name] = Capacity.objects.get(option=op).capacity_value
 
         p_demand = {}
         p_demand.clear()
         for t in Year.objects.all():
-            year = Year.objects.get(year_value=t.year_value)
-            p_demand[year.year_value] = Demand.objects.get(year=year).demand_value
-
-        # p_demand = {
-        #     2020: 170
-        # }
+            # year = Year.objects.get(year_value=t.year_value)
+            p_demand[t.year_value] = Demand.objects.get(year=t).demand_value
         
-        run_instance = OptiModel(i_op, i_t, p_capital, p_opcost, p_capacity, p_demand)
-        run_instance.run_model()
-        result = str(run_instance.m.obj.value())
+        run = OptiModel(i_op, i_t, p_capital, p_opcost, p_capacity, p_demand)
+        run.run_model()
+        result = str(run.m.obj.expr())    
+        # result = str(run.m.i_t.value)
 
-    # myyear = Year.objects.get(year_value=2020).id
-    # myoption = Option.objects.get(name='op01').id
-    # p_capital = {}
-    # for op in Option.objects:
-    #     for t in Year.objects:
-    #         option_id = op.id
-    #         year_id = t.id
-    #         p_capital[(op, t)] = Capital.objects.get(
-    #             option=option_id, year=year_id)
-
-    # result = p_capital
-    
+        # output results to django model
+        util = run.write_results()
+        for op in Option.objects.all():
+            for t in Year.objects.all():
+                Utilisation.objects.update_or_create(
+                    option=op, 
+                    year=t, 
+                    util_value=util[op.name, t.year_value]
+                )
 
     return render(request, 'mainapp\\run_page.html', {'result': result})
+
+
+def output_page(request):
+    form = OptionForm(request.POST)
+    years = []
+    values = []
+    if request.method == 'POST':
+        if form.is_valid():
+            years = [t.year_value for t in Year.objects.all()]
+            op_choice = request.POST['options']
+            
+            values = []
+            for t in years:
+                year = Year.objects.get(year_value=t)
+                option = Option.objects.get(pk=op_choice)
+                values.append(Utilisation.objects.get(option=option, year=year).util_value)
+
+    return render(
+        request, 
+        'mainapp\\output_page.html', 
+        {'form': form, 'years': years, 'values': values}
+    )

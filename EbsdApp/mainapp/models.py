@@ -54,3 +54,15 @@ class CsvPath(models.Model):
 
     def __str__(self):
         return str(self.path)
+
+
+class Utilisation(models.Model):
+    option = models.ForeignKey('Option', on_delete=models.CASCADE)
+    year = models.ForeignKey('Year', on_delete=models.CASCADE)
+    util_value = models.FloatField()
+
+    def __str__(self):
+        return str(self.util_value)
+
+
+

@@ -1,13 +1,6 @@
 from django import forms
 from .models import *
 
-class CapitalForm(forms.ModelForm):
-    class Meta:
-        model = Capital
-        fields = '__all__'
+class OptionForm(forms.Form):
+    options = forms.ModelChoiceField(queryset=Option.objects.all())
 
-
-class YearForm(forms.ModelForm):
-    class Meta:
-        model = Year
-        fields = '__all__'

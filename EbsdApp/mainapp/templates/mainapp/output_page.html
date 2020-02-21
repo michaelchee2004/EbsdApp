@@ -1,0 +1,63 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+
+        <div>
+            <p> This is output page. </p>
+
+            <form action="" method="POST"> {% csrf_token %}
+                {{ form.as_table }}
+                <input type="submit" />
+            </form>
+
+            <div id="util-chart" style="min-width: 310px; height: 400px; margin: 0 auto" class="border"></div>
+
+        </div>
+
+        <script>
+            _categories = {{ years | safe }};
+            _values = {{ values | safe }};
+
+            Highcharts.chart('util-chart', {
+                chart: {
+                    type: 'bar'
+                },
+                title: {
+                    text: 'Option utilisation'
+                },
+                subtitle: {
+                    text: ''
+                },
+                xAxis: {
+                    categories: _categories,
+                    crosshair: true
+                },
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: 'units'
+                    }
+                },
+                tooltip: {
+                    headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                    pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                        '<td style="padding:0"><b>{point.y:.1f} </b></td></tr>',
+                    footerFormat: '</table>',
+                    shared: true,
+                    useHTML: true
+                },
+                plotOptions: {
+                    column: {
+                        pointPadding: 0.2,
+                        borderWidth: 0
+                    }
+                },
+                series: [{
+                    name: 'Option utilisation',
+                    data: _values
+
+                }]
+            });
+        </script>
+
+{% endblock %}

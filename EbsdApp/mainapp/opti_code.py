@@ -3,6 +3,8 @@ from pyomo.environ import *
 class OptiModel():
     
     def __init__(self, i_op, i_t, p_capital, p_opcost, p_capacity, p_demand):
+        self.run_status = 0
+
         self.m = ConcreteModel()
         self.m.i_op = Set(initialize=i_op)
         self.m.i_t = Set(initialize=i_t)
@@ -59,4 +61,15 @@ class OptiModel():
 
     def run_model(self):
         run = self.solver.solve(self.m, tee=True)
+        self.run_status = 1
+
+    def write_results(self):
+        if self.run_status == 1:
+            output_dict = {}
+            for op in self.m.i_op:
+                for t in self.m.i_t:
+                    output_dict[(op, t)] = self.m.v_F[op, t].value
+        return output_dict
+
+
 
